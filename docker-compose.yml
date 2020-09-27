@@ -1,0 +1,63 @@
+version: '3.1'
+services:
+
+  app_mng:
+    build:
+      # context: ./app
+      context: ./app_mng
+      dockerfile: Dockerfile
+    image: ywemay/coco-containers-mng
+    container_name: coco-containers-mng
+    ports:
+      - 9528:9528
+    volumes:
+      - ./app_mng:/home/node/app
+    # command: "npm run dev"
+    # command: "http-server dist"
+    links:
+      - cocoapi
+    environment:
+      API_LINK: 'http://cocoapi:3000'
+
+  cocoapi:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: ywemay/coco-containers-api
+    container_name: coco-containers-api
+    ports:
+      - 3000:3000
+    volumes:
+      - ./api:/home/node/app
+    links:
+      - cocomongosrv
+    environment:
+      DB_LINK: 'mongodb://cococtnr:cocopass@cocomongosrv:27017/coco'
+      JWT_KEY: "anJWTTokenSoThatCanEncrypt"
+
+  cocomongosrv:
+    image: mongo:4.4
+    restart: always
+    container_name: coco-containers-mongo
+    environment:
+      MONGO_INITDB_DATABASE: 'coco'
+      MONGO_INITDB_ROOT_USERNAME: 'someusername'
+      MONGO_INITDB_ROOT_PASSWORD: 'somepassword'
+    volumes:
+      - ./init-db/init-mongo.js:/docker-entrypoint-initdb.d/init.js:ro
+      - ./data:/data/db
+    ports:
+      - 27017:27017
+
+  # mongo-express:
+  #   image: mongo-express
+  #   restart: always
+  #   depends_on:
+  #       - mongosrv
+  #   ports:
+  #     - 8081:8081
+  #   environment:
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: someusername
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: SoM3s3cur3paSS
+  #     ME_CONFIG_MONGODB_PORT: 27017
+  #     ME_CONFIG_MONGODB_SERVER: mongosrv
